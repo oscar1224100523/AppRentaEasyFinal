@@ -655,8 +655,16 @@ Esta sección te guiará en cómo replicar la aplicación desde cero, explicando
 - Se usa para almacenar y recuperar usuarios de Firestore
 
 ```kotlin
-// Aquí pegarás tu archivo User.kt
-// Data class con propiedades del usuario
+package com.oarj.rentaeasy.models
+
+data class User(
+    val id: String = "",
+    val name: String = "",
+    val email: String = "",
+    val userType: String = "", // "inquilino" o "propietario"
+    val phoneNumber: String = "",
+    val profileImageUrl: String = ""
+)
 ```
 
 #### 3.2 Property.kt
@@ -669,8 +677,22 @@ Esta sección te guiará en cómo replicar la aplicación desde cero, explicando
 - Se serializa/deserializa con Firestore
 
 ```kotlin
-// Aquí pegarás tu archivo Property.kt
-// Data class con todos los atributos de una propiedad
+package com.oarj.rentaeasy.models
+
+data class Property(
+    val id: String = "",
+    val ownerId: String = "",
+    val ownerName: String = "",
+    val title: String = "",
+    val description: String = "",
+    val price: Double = 0.0,
+    val location: String = "",
+    val address: String = "",
+    val imageUrls: List<String> = emptyList(),
+    val bedrooms: Int = 0,
+    val bathrooms: Int = 0,
+    val timestamp: Long = System.currentTimeMillis()
+)
 ```
 
 #### 3.3 Favorite.kt
@@ -683,8 +705,14 @@ Esta sección te guiará en cómo replicar la aplicación desde cero, explicando
 - Permite gestionar lista de favoritos por usuario
 
 ```kotlin
-// Aquí pegarás tu archivo Favorite.kt
-// Data class simple para la relación favoritos
+package com.oarj.rentaeasy.models
+
+data class Favorite(
+    val id: String = "",
+    val userId: String = "",
+    val propertyId: String = "",
+    val timestamp: Long = System.currentTimeMillis()
+)
 ```
 
 ---
