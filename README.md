@@ -85,32 +85,24 @@ Este proyecto fue desarrollado como parte del curso de **Desarrollo de Aplicacio
 
 ### Flujo de Autenticación
 
-#### Splash Screen
-![Splash](screenshots/splash.png)
-*Pantalla de bienvenida con logo de la aplicación*
 
 #### Login
 ![Login](screenshots/login.png)
 *Inicio de sesión con validación de credenciales*
 
-#### Registro
-![Registro](screenshots/register.png)
-*Formulario de registro con selección de tipo de usuario*
+
 
 ---
 
 ### Pantallas Principales
 
 #### Home - Vista Principal
-![Home](screenshots/home.png)
+![Home](screenshots/Home.jfif)
 *Listado de todas las propiedades disponibles con búsqueda por ubicación*
 
-#### Detalle de Propiedad
-![Detalle](screenshots/detail.png)
-*Información completa con galería de imágenes, precio y características*
 
 #### Crear Publicación
-![Crear](screenshots/create.png)
+![Crear](screenshots/Detalle.jfif)
 *Formulario completo para propietarios con carga de imágenes*
 
 ---
@@ -118,11 +110,11 @@ Este proyecto fue desarrollado como parte del curso de **Desarrollo de Aplicacio
 ### Funcionalidades Adicionales
 
 #### Favoritos
-![Favoritos](screenshots/favorites.png)
+![Favoritos](screenshots/Favoritos.jfif)
 *Lista de propiedades guardadas para consulta rápida*
 
 #### Perfil de Usuario
-![Perfil](screenshots/profile.png)
+![Perfil](screenshots/Perfil.jfif)
 *Información personal, tipo de usuario y opciones de configuración*
 
 ---
