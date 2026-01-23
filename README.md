@@ -1084,8 +1084,82 @@ class FavoriteRepository {
 - Permite testing más fácil
 
 ```kotlin
-// Aquí pegarás tu archivo AuthViewModel.kt
-// ViewModel con StateFlow para estados de auth
+package com.oarj.rentaeasy.viewmodels
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.oarj.rentaeasy.models.User
+import com.oarj.rentaeasy.repository.AuthRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+class AuthViewModel : ViewModel() {
+    private val repository = AuthRepository()
+
+    private val _currentUser = MutableStateFlow<User?>(null)
+    val currentUser: StateFlow<User?> = _currentUser
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    init {
+        loadCurrentUser()
+    }
+
+    private fun loadCurrentUser() {
+        viewModelScope.launch {
+            _currentUser.value = repository.getCurrentUser()
+        }
+    }
+
+    fun register(email: String, password: String, name: String, userType: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            val result = repository.register(email, password, name, userType)
+            result.onSuccess { user ->
+                _currentUser.value = user
+                onSuccess()
+            }.onFailure { exception ->
+                _errorMessage.value = exception.message
+            }
+
+            _isLoading.value = false
+        }
+    }
+
+    fun login(email: String, password: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            val result = repository.login(email, password)
+            result.onSuccess { user ->
+                _currentUser.value = user
+                onSuccess()
+            }.onFailure { exception ->
+                _errorMessage.value = exception.message
+            }
+
+            _isLoading.value = false
+        }
+    }
+
+    fun logout(onSuccess: () -> Unit) {
+        repository.logout()
+        _currentUser.value = null
+        onSuccess()
+    }
+
+    fun clearError() {
+        _errorMessage.value = null
+    }
+}
 ```
 
 #### 5.2 PropertyViewModel.kt
@@ -1107,8 +1181,104 @@ class FavoriteRepository {
 - Errores
 
 ```kotlin
-// Aquí pegarás tu archivo PropertyViewModel.kt
-// ViewModel con operaciones CRUD y filtrado
+package com.oarj.rentaeasy.viewmodels
+
+import android.net.Uri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.oarj.rentaeasy.models.Property
+import com.oarj.rentaeasy.repository.PropertyRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+class PropertyViewModel : ViewModel() {
+    private val repository = PropertyRepository()
+
+    private val _properties = MutableStateFlow<List<Property>>(emptyList())
+    val properties: StateFlow<List<Property>> = _properties
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    init {
+        loadProperties()
+    }
+
+    fun loadProperties() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val result = repository.getAllProperties()
+            result.onSuccess { properties ->
+                _properties.value = properties
+            }.onFailure { exception ->
+                _errorMessage.value = exception.message
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun searchProperties(query: String) {
+        _searchQuery.value = query
+        if (query.isEmpty()) {
+            loadProperties()
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            val result = repository.searchProperties(query)
+            result.onSuccess { properties ->
+                _properties.value = properties
+            }.onFailure { exception ->
+                _errorMessage.value = exception.message
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun createProperty(
+        property: Property,
+        imageUris: List<Uri>,
+        onSuccess: () -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val result = repository.createProperty(property, imageUris)
+            result.onSuccess {
+                loadProperties()
+                onSuccess()
+            }.onFailure { exception ->
+                _errorMessage.value = exception.message
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun deleteProperty(propertyId: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val result = repository.deleteProperty(propertyId)
+            result.onSuccess {
+                loadProperties()
+                onSuccess()
+            }.onFailure { exception ->
+                _errorMessage.value = exception.message
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun clearError() {
+        _errorMessage.value = null
+    }
+}
 ```
 
 #### 5.3 FavoriteViewModel.kt
@@ -1123,8 +1293,63 @@ class FavoriteRepository {
   - `isFavorite()`: Verifica estado
 
 ```kotlin
-// Aquí pegarás tu archivo FavoriteViewModel.kt
-// ViewModel específico para favoritos
+package com.oarj.rentaeasy.viewmodels
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.oarj.rentaeasy.models.Property
+import com.oarj.rentaeasy.repository.FavoriteRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+class FavoriteViewModel : ViewModel() {
+    private val repository = FavoriteRepository()
+
+    private val _favoriteProperties = MutableStateFlow<List<Property>>(emptyList())
+    val favoriteProperties: StateFlow<List<Property>> = _favoriteProperties
+
+    private val _favoriteIds = MutableStateFlow<Set<String>>(emptySet())
+    val favoriteIds: StateFlow<Set<String>> = _favoriteIds
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    fun loadFavorites(userId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            val idsResult = repository.getFavorites(userId)
+            idsResult.onSuccess { ids ->
+                _favoriteIds.value = ids.toSet()
+            }
+
+            val propertiesResult = repository.getFavoriteProperties(userId)
+            propertiesResult.onSuccess { properties ->
+                _favoriteProperties.value = properties
+            }
+
+            _isLoading.value = false
+        }
+    }
+
+    fun toggleFavorite(userId: String, propertyId: String) {
+        viewModelScope.launch {
+            if (_favoriteIds.value.contains(propertyId)) {
+                repository.removeFavorite(userId, propertyId)
+                _favoriteIds.value = _favoriteIds.value - propertyId
+            } else {
+                repository.addFavorite(userId, propertyId)
+                _favoriteIds.value = _favoriteIds.value + propertyId
+            }
+            loadFavorites(userId)
+        }
+    }
+
+    fun isFavorite(propertyId: String): Boolean {
+        return _favoriteIds.value.contains(propertyId)
+    }
+}
 ```
 
 ---
@@ -1141,8 +1366,17 @@ class FavoriteRepository {
 - Se usan en todo Compose
 
 ```kotlin
-// Aquí pegarás tu archivo Color.kt
-// Definición de colores primarios, secundarios, etc.
+package com.oarj.rentaeasy.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+val Purple80 = Color(0xFFD0BCFF)
+val PurpleGrey80 = Color(0xFFCCC2DC)
+val Pink80 = Color(0xFFEFB8C8)
+
+val Purple40 = Color(0xFF6650a4)
+val PurpleGrey40 = Color(0xFF625b71)
+val Pink40 = Color(0xFF7D5260)
 ```
 
 #### 6.2 Type.kt
@@ -1155,8 +1389,23 @@ class FavoriteRepository {
 - Estilos de texto consistentes
 
 ```kotlin
-// Aquí pegarás tu archivo Type.kt
-// Configuración de Typography de Material3
+package com.oarj.rentaeasy.ui.theme
+
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+
+val Typography = Typography(
+    bodyLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    )
+)
 ```
 
 #### 6.3 Theme.kt
@@ -1170,8 +1419,23 @@ class FavoriteRepository {
 - Define tema oscuro
 
 ```kotlin
-// Aquí pegarás tu archivo Theme.kt
-// @Composable que envuelve toda la app con el tema
+package com.oarj.rentaeasy.ui.theme
+
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+
+val Typography = Typography(
+    bodyLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    )
+)
 ```
 
 ---
