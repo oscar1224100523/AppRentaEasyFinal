@@ -1454,8 +1454,116 @@ val Typography = Typography(
 - Maneja click para navegar a detalle
 
 ```kotlin
-// Aquí pegarás tu archivo PropertyCard.kt
-// @Composable Card con toda la info resumida de la propiedad
+package com.oarj.rentaeasy.components
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.oarj.rentaeasy.models.Property
+
+@Composable
+fun PropertyCard(
+    property: Property,
+    isFavorite: Boolean,
+    onPropertyClick: () -> Unit,
+    onFavoriteClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+            .clickable { onPropertyClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column {
+            Box {
+                AsyncImage(
+                    model = property.imageUrls.firstOrNull() ?: "",
+                    contentDescription = property.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                IconButton(
+                    onClick = onFavoriteClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorito",
+                        tint = if (isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Text(
+                    text = property.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = property.location,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "$${property.price}/mes",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Row {
+                        Text(
+                            text = "${property.bedrooms} hab",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${property.bathrooms} baños",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 ```
 
 #### 7.2 SearchBar.kt
@@ -1469,8 +1577,53 @@ val Typography = Typography(
 - Callback para cambios de texto
 
 ```kotlin
-// Aquí pegarás tu archivo SearchBar.kt
-// @Composable TextField estilizado para búsqueda
+package com.oarj.rentaeasy.components
+
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        placeholder = { Text("Buscar por ubicación...") },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Buscar"
+            )
+        },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = "Limpiar"
+                    )
+                }
+            }
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(28.dp),
+        colors = OutlinedTextFieldDefaults.colors()
+    )
+}
 ```
 
 #### 7.3 BottomNavigationBar.kt
@@ -1484,8 +1637,44 @@ val Typography = Typography(
 - Cambia de pantalla al hacer click
 
 ```kotlin
-// Aquí pegarás tu archivo BottomNavigationBar.kt
-// NavigationBar de Material3 con íconos
+package com.oarj.rentaeasy.components
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
+
+sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: String) {
+    object Home : BottomNavItem("home", Icons.Default.Home, "Inicio")
+    object Favorites : BottomNavItem("favorites", Icons.Default.Favorite, "Favoritos")
+    object Profile : BottomNavItem("profile", Icons.Default.Person, "Perfil")
+}
+
+@Composable
+fun BottomNavigationBar(
+    currentRoute: String,
+    onNavigate: (String) -> Unit
+) {
+    val items = listOf(
+        BottomNavItem.Home,
+        BottomNavItem.Favorites,
+        BottomNavItem.Profile
+    )
+
+    NavigationBar {
+        items.forEach { item ->
+            NavigationBarItem(
+                icon = { Icon(item.icon, contentDescription = item.label) },
+                label = { Text(item.label) },
+                selected = currentRoute == item.route,
+                onClick = { onNavigate(item.route) }
+            )
+        }
+    }
+}
 ```
 
 ---
@@ -1512,8 +1701,122 @@ val Typography = Typography(
 - Alerts para errores
 
 ```kotlin
-// Aquí pegarás tu archivo LoginScreen.kt
-// @Composable completo con formulario de login
+package com.oarj.rentaeasy.screens.login
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import com.oarj.rentaeasy.viewmodels.AuthViewModel
+
+@Composable
+fun LoginScreen(
+    authViewModel: AuthViewModel,
+    onNavigateToRegister: () -> Unit,
+    onNavigateToHome: () -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    val isLoading by authViewModel.isLoading.collectAsState()
+    val errorMessage by authViewModel.errorMessage.collectAsState()
+
+    LaunchedEffect(errorMessage) {
+        if (errorMessage != null) {
+            authViewModel.clearError()
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "RentEasy",
+            style = MaterialTheme.typography.displayMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Encuentra tu hogar ideal",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Contraseña") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage ?: "",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        Button(
+            onClick = {
+                authViewModel.login(email, password) {
+                    onNavigateToHome()
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            enabled = !isLoading && email.isNotEmpty() && password.isNotEmpty()
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Text("Iniciar Sesión")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        TextButton(onClick = onNavigateToRegister) {
+            Text("¿No tienes cuenta? Regístrate")
+        }
+    }
+}
 ```
 
 #### 8.2 RegisterScreen.kt
@@ -1529,8 +1832,200 @@ val Typography = Typography(
 - Navega a Home tras éxito
 
 ```kotlin
-// Aquí pegarás tu archivo RegisterScreen.kt
-// @Composable con formulario extenso de registro
+package com.oarj.rentaeasy.screens.register
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import com.oarj.rentaeasy.viewmodels.AuthViewModel
+import androidx.compose.material3.ExperimentalMaterial3Api
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+fun RegisterScreen(
+    authViewModel: AuthViewModel,
+    onNavigateToLogin: () -> Unit,
+    onNavigateToHome: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var userType by remember { mutableStateOf("inquilino") }
+    var expanded by remember { mutableStateOf(false) }
+
+    val isLoading by authViewModel.isLoading.collectAsState()
+    val errorMessage by authViewModel.errorMessage.collectAsState()
+
+    val scrollState = rememberScrollState()
+
+    LaunchedEffect(errorMessage) {
+        if (errorMessage != null) {
+            authViewModel.clearError()
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+            .verticalScroll(scrollState),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Crear Cuenta",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Nombre completo") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Contraseña") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it },
+            label = { Text("Confirmar contraseña") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = if (userType == "inquilino") "Inquilino" else "Propietario",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Tipo de usuario") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Inquilino") },
+                    onClick = {
+                        userType = "inquilino"
+                        expanded = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Propietario") },
+                    onClick = {
+                        userType = "propietario"
+                        expanded = false
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage ?: "",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        if (password != confirmPassword && confirmPassword.isNotEmpty()) {
+            Text(
+                text = "Las contraseñas no coinciden",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        Button(
+            onClick = {
+                if (password == confirmPassword) {
+                    authViewModel.register(email, password, name, userType) {
+                        onNavigateToHome()
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            enabled = !isLoading &&
+                    name.isNotEmpty() &&
+                    email.isNotEmpty() &&
+                    password.isNotEmpty() &&
+                    password == confirmPassword
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Text("Registrarse")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        TextButton(onClick = onNavigateToLogin) {
+            Text("¿Ya tienes cuenta? Inicia sesión")
+        }
+    }
+}
 ```
 
 #### 8.3 HomeScreen.kt
@@ -1554,8 +2049,140 @@ val Typography = Typography(
 - BottomNavigationBar
 
 ```kotlin
-// Aquí pegarás tu archivo HomeScreen.kt
-// Listado principal de propiedades con búsqueda
+package com.oarj.rentaeasy.screens.home
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.oarj.rentaeasy.components.BottomNavigationBar
+import com.oarj.rentaeasy.components.PropertyCard
+import com.oarj.rentaeasy.components.SearchBar
+import com.oarj.rentaeasy.viewmodels.AuthViewModel
+import com.oarj.rentaeasy.viewmodels.FavoriteViewModel
+import com.oarj.rentaeasy.viewmodels.PropertyViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    propertyViewModel: PropertyViewModel,
+    favoriteViewModel: FavoriteViewModel,
+    authViewModel: AuthViewModel,
+    onNavigateToPropertyDetail: (String) -> Unit,
+    onNavigateToCreateProperty: () -> Unit,
+    onNavigateToFavorites: () -> Unit,
+    onNavigateToProfile: () -> Unit
+) {
+    val properties by propertyViewModel.properties.collectAsState()
+    val isLoading by propertyViewModel.isLoading.collectAsState()
+    val searchQuery by propertyViewModel.searchQuery.collectAsState()
+    val currentUser by authViewModel.currentUser.collectAsState()
+    val favoriteIds by favoriteViewModel.favoriteIds.collectAsState()
+
+    LaunchedEffect(currentUser) {
+        currentUser?.let { user ->
+            favoriteViewModel.loadFavorites(user.id)
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("RentEasy") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        },
+        floatingActionButton = {
+            if (currentUser?.userType == "propietario") {
+                FloatingActionButton(
+                    onClick = onNavigateToCreateProperty,
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Crear publicación"
+                    )
+                }
+            }
+        },
+        bottomBar = {
+            BottomNavigationBar(
+                currentRoute = "home",
+                onNavigate = { route ->
+                    when (route) {
+                        "favorites" -> onNavigateToFavorites()
+                        "profile" -> onNavigateToProfile()
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = { query ->
+                    propertyViewModel.searchProperties(query)
+                }
+            )
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (properties.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (searchQuery.isEmpty())
+                            "No hay propiedades disponibles"
+                        else
+                            "No se encontraron propiedades",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(8.dp)
+                ) {
+                    items(properties) { property ->
+                        PropertyCard(
+                            property = property,
+                            isFavorite = favoriteIds.contains(property.id),
+                            onPropertyClick = {
+                                onNavigateToPropertyDetail(property.id)
+                            },
+                            onFavoriteClick = {
+                                currentUser?.let { user ->
+                                    favoriteViewModel.toggleFavorite(user.id, property.id)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 ```
 
 #### 8.4 PropertyDetailScreen.kt
@@ -1577,8 +2204,341 @@ val Typography = Typography(
 - Botones de contacto
 
 ```kotlin
-// Aquí pegarás tu archivo PropertyDetailScreen.kt
-// Vista detallada con galería e info completa
+package com.oarj.rentaeasy.screens.propertydetail
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.oarj.rentaeasy.models.Property
+import com.oarj.rentaeasy.repository.PropertyRepository
+import com.oarj.rentaeasy.viewmodels.AuthViewModel
+import com.oarj.rentaeasy.viewmodels.FavoriteViewModel
+import com.oarj.rentaeasy.viewmodels.PropertyViewModel
+import kotlinx.coroutines.launch
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PropertyDetailScreen(
+    propertyId: String,
+    propertyViewModel: PropertyViewModel,
+    favoriteViewModel: FavoriteViewModel,
+    authViewModel: AuthViewModel,
+    onNavigateBack: () -> Unit
+) {
+    var property by remember { mutableStateOf<Property?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    val currentUser by authViewModel.currentUser.collectAsState()
+    val favoriteIds by favoriteViewModel.favoriteIds.collectAsState()
+    val isFavorite = favoriteIds.contains(propertyId)
+
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(propertyId) {
+        scope.launch {
+            isLoading = true
+            val repository = PropertyRepository()
+            val result = repository.getPropertyById(propertyId)
+            result.onSuccess { prop ->
+                property = prop
+            }
+            isLoading = false
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Detalles") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Volver"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            currentUser?.let { user ->
+                                favoriteViewModel.toggleFavorite(user.id, propertyId)
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    ) { paddingValues ->
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (property == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No se pudo cargar la propiedad",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(scrollState)
+            ) {
+                // Imagen principal
+                if (property!!.imageUrls.isNotEmpty()) {
+                    AsyncImage(
+                        model = property!!.imageUrls.first(),
+                        contentDescription = property!!.title,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Sin imagen")
+                    }
+                }
+
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    // Título y precio
+                    Text(
+                        text = property!!.title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "$${property!!.price}/mes",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Ubicación
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Ubicación",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = property!!.location,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = property!!.address,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Características
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Características",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "${property!!.bedrooms}",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Habitaciones",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "${property!!.bathrooms}",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Baños",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Descripción
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Descripción",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = property!!.description,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Información del propietario
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Propietario",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = property!!.ownerName,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Botón de contacto
+                    Button(
+                        onClick = { /* Aquí puedes agregar funcionalidad de contacto */ },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                    ) {
+                        Text("Contactar al propietario")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Galería de imágenes adicionales
+                    if (property!!.imageUrls.size > 1) {
+                        Text(
+                            text = "Más imágenes",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        property!!.imageUrls.drop(1).forEach { imageUrl ->
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = "Imagen de la propiedad",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                                    .padding(vertical = 4.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 ```
 
 #### 8.5 CreatePropertyScreen.kt
@@ -1601,8 +2561,237 @@ val Typography = Typography(
 - Button (Publicar)
 
 ```kotlin
-// Aquí pegarás tu archivo CreatePropertyScreen.kt
-// Formulario completo de creación de propiedad
+package com.oarj.rentaeasy.screens.createproperty
+
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import com.oarj.rentaeasy.models.Property
+import com.oarj.rentaeasy.viewmodels.AuthViewModel
+import com.oarj.rentaeasy.viewmodels.PropertyViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreatePropertyScreen(
+    propertyViewModel: PropertyViewModel,
+    authViewModel: AuthViewModel,
+    onNavigateBack: () -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var price by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
+    var bedrooms by remember { mutableStateOf("") }
+    var bathrooms by remember { mutableStateOf("") }
+    var selectedImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+
+    val currentUser by authViewModel.currentUser.collectAsState()
+    val isLoading by propertyViewModel.isLoading.collectAsState()
+    val errorMessage by propertyViewModel.errorMessage.collectAsState()
+
+    val scrollState = rememberScrollState()
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        selectedImageUris = uris
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Nueva Publicación") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Volver"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(scrollState)
+        ) {
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Título") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Descripción") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                maxLines = 5
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = price,
+                onValueChange = { price = it },
+                label = { Text("Precio mensual") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                leadingIcon = { Text("$") },
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = location,
+                onValueChange = { location = it },
+                label = { Text("Ubicación (Ciudad)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = address,
+                onValueChange = { address = it },
+                label = { Text("Dirección completa") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedTextField(
+                    value = bedrooms,
+                    onValueChange = { bedrooms = it },
+                    label = { Text("Habitaciones") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = bathrooms,
+                    onValueChange = { bathrooms = it },
+                    label = { Text("Baños") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = { imagePickerLauncher.launch("image/*") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Seleccionar imágenes"
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Agregar Imágenes (${selectedImageUris.size})")
+            }
+
+            if (selectedImageUris.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "${selectedImageUris.size} imagen(es) seleccionada(s)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            Button(
+                onClick = {
+                    val property = Property(
+                        ownerId = currentUser?.id ?: "",
+                        ownerName = currentUser?.name ?: "",
+                        title = title,
+                        description = description,
+                        price = price.toDoubleOrNull() ?: 0.0,
+                        location = location,
+                        address = address,
+                        bedrooms = bedrooms.toIntOrNull() ?: 0,
+                        bathrooms = bathrooms.toIntOrNull() ?: 0
+                    )
+
+                    propertyViewModel.createProperty(property, selectedImageUris) {
+                        onNavigateBack()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                enabled = !isLoading &&
+                        title.isNotEmpty() &&
+                        description.isNotEmpty() &&
+                        price.isNotEmpty() &&
+                        location.isNotEmpty() &&
+                        address.isNotEmpty() &&
+                        bedrooms.isNotEmpty() &&
+                        bathrooms.isNotEmpty() &&
+                        selectedImageUris.isNotEmpty()
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Publicar")
+                }
+            }
+        }
+    }
+}
 ```
 
 #### 8.6 FavoritesScreen.kt
@@ -1617,8 +2806,120 @@ val Typography = Typography(
 - Si no hay favoritos, muestra mensaje vacío
 
 ```kotlin
-// Aquí pegarás tu archivo FavoritesScreen.kt
-// LazyColumn de favoritos con opción de eliminar
+package com.oarj.rentaeasy.screens.favorites
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.oarj.rentaeasy.components.BottomNavigationBar
+import com.oarj.rentaeasy.components.PropertyCard
+import com.oarj.rentaeasy.viewmodels.AuthViewModel
+import com.oarj.rentaeasy.viewmodels.FavoriteViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FavoritesScreen(
+    favoriteViewModel: FavoriteViewModel,
+    authViewModel: AuthViewModel,
+    onNavigateToPropertyDetail: (String) -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToProfile: () -> Unit
+) {
+    val favoriteProperties by favoriteViewModel.favoriteProperties.collectAsState()
+    val isLoading by favoriteViewModel.isLoading.collectAsState()
+    val currentUser by authViewModel.currentUser.collectAsState()
+    val favoriteIds by favoriteViewModel.favoriteIds.collectAsState()
+
+    LaunchedEffect(currentUser) {
+        currentUser?.let { user ->
+            favoriteViewModel.loadFavorites(user.id)
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Favoritos") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        },
+        bottomBar = {
+            BottomNavigationBar(
+                currentRoute = "favorites",
+                onNavigate = { route ->
+                    when (route) {
+                        "home" -> onNavigateToHome()
+                        "profile" -> onNavigateToProfile()
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (favoriteProperties.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No tienes favoritos",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Agrega propiedades a favoritos desde la pantalla de inicio",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(8.dp)
+            ) {
+                items(favoriteProperties) { property ->
+                    PropertyCard(
+                        property = property,
+                        isFavorite = favoriteIds.contains(property.id),
+                        onPropertyClick = {
+                            onNavigateToPropertyDetail(property.id)
+                        },
+                        onFavoriteClick = {
+                            currentUser?.let { user ->
+                                favoriteViewModel.toggleFavorite(user.id, property.id)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
 ```
 
 #### 8.7 ProfileScreen.kt
