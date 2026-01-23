@@ -87,7 +87,7 @@ Este proyecto fue desarrollado como parte del curso de **Desarrollo de Aplicacio
 
 
 #### Login
-![Login](screenshots/login.png)
+![Login](screenshots/Login.jfif)
 *Inicio de sesión con validación de credenciales*
 
 
